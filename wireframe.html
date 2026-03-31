@@ -4,28 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Akka Cluster Agent Dashboard</title>
+  <link rel="icon" href="https://doc.akka.io/_/img/favicon.ico" />
   <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.27.0/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #ffffff; --fg: #0a0a0a; --card: #ffffff; --card-fg: #0a0a0a;
-      --muted: #ececf0; --muted-fg: #717182; --border: rgba(0,0,0,0.1);
-      --primary: #030213; --primary-fg: #ffffff;
-      --destructive: #d4183d; --destructive-fg: #ffffff;
-      --secondary: #f0f0f4; --secondary-fg: #030213;
+      --bg: #1a1a1a; --fg: #f5f5f5; --card: #2f2f2f; --card-fg: #e5e5e5;
+      --muted: #434343; --muted-fg: #c9c9c9; --border: #434343;
+      --primary: #00d8dd; --primary-fg: #1a1a1a;
+      --accent: #ffce4a; --accent-fg: #1a1a1a;
+      --destructive: #ff5400; --destructive-fg: #ffffff;
+      --secondary: #313131; --secondary-fg: #e5e5e5;
       --radius: 0.625rem;
+      --cyan: #00d8dd; --cyan-dk: #02a4a7;
+      --yellow: #ffce4a; --yellow-dk: #f5b60b;
     }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
+    body { font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
     .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
-    .badge-default { background: var(--primary); color: var(--primary-fg); }
+    .badge-default { background: var(--cyan); color: var(--primary-fg); }
     .badge-secondary { background: var(--secondary); color: var(--secondary-fg); }
     .badge-destructive { background: var(--destructive); color: var(--destructive-fg); }
     .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: all 0.15s; }
-    .btn:hover { opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-    .btn-primary { background: var(--primary); color: var(--primary-fg); }
+    .btn:hover { opacity: 0.9; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+    .btn-primary { background: var(--yellow); color: var(--accent-fg); }
+    .btn-primary:hover { background: var(--yellow-dk); }
     .btn-destructive { background: var(--destructive); color: var(--destructive-fg); }
     .btn-lg { padding: 14px 24px; font-size: 15px; }
     .text-muted { color: var(--muted-fg); }
@@ -38,11 +44,11 @@
     .font-medium { font-weight: 500; }
     .font-bold { font-weight: 700; }
 
-    /* Icons as inline SVGs */
-    .icon { width: 1em; height: 1em; display: inline-block; vertical-align: middle; }
-    .icon-sm { width: 14px; height: 14px; }
-    .icon-md { width: 20px; height: 20px; }
-    .icon-lg { width: 24px; height: 24px; }
+    /* Scrollbar styling for dark theme */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #2f2f2f; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #606060; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c9c9c9; }
 
     /* Animations */
     @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
@@ -110,16 +116,16 @@
     // ── ClusterSummary ──
     function ClusterSummary({ totalInstances, totalTokens, activeNodes, totalNodes, totalTeams, avgReadLatency, avgWriteLatency }) {
       const stats = [
-        { label: "Active Teams", value: totalTeams, icon: <ActivityIcon size={20} color="#3b82f6" />, bg: "rgba(59,130,246,0.1)" },
-        { label: "Instances", value: totalInstances, icon: <ZapIcon size={20} color="#22c55e" />, bg: "rgba(34,197,94,0.1)" },
-        { label: "Total Tokens", value: totalTokens.toLocaleString(), icon: <BotIcon size={20} color="#a855f7" />, bg: "rgba(168,85,247,0.1)" },
-        { label: "Avg Read", value: `${avgReadLatency}ms`, icon: <TimerIcon size={20} color="#06b6d4" />, bg: "rgba(6,182,212,0.1)" },
-        { label: "Avg Write", value: `${avgWriteLatency}ms`, icon: <TimerIcon size={20} color="#f59e0b" />, bg: "rgba(245,158,11,0.1)" },
-        { label: "Active Nodes", value: `${activeNodes} / ${totalNodes}`, icon: <ServerIcon size={20} color="#f97316" />, bg: "rgba(249,115,22,0.1)" },
+        { label: "Active Teams", value: totalTeams, icon: <ActivityIcon size={20} color="#00d8dd" />, bg: "rgba(0,216,221,0.1)" },
+        { label: "Instances", value: totalInstances, icon: <ZapIcon size={20} color="#72d35b" />, bg: "rgba(114,211,91,0.1)" },
+        { label: "Total Tokens", value: totalTokens.toLocaleString(), icon: <BotIcon size={20} color="#d2a8ff" />, bg: "rgba(210,168,255,0.1)" },
+        { label: "Avg Read", value: `${avgReadLatency}ms`, icon: <TimerIcon size={20} color="#00d8dd" />, bg: "rgba(0,216,221,0.1)" },
+        { label: "Avg Write", value: `${avgWriteLatency}ms`, icon: <TimerIcon size={20} color="#ffce4a" />, bg: "rgba(255,206,74,0.1)" },
+        { label: "Active Nodes", value: `${activeNodes} / ${totalNodes}`, icon: <ServerIcon size={20} color="#d45a00" />, bg: "rgba(255,166,87,0.1)" },
         { label: "Cluster Health",
           value: activeNodes === 0 ? "Failed" : activeNodes === totalNodes ? "Healthy" : "Degraded",
-          icon: <ServerIcon size={20} color={activeNodes === 0 ? "#4a0030" : activeNodes === totalNodes ? "#22c55e" : "#ef4444"} />,
-          bg: activeNodes === 0 ? "rgba(74,0,48,0.15)" : activeNodes === totalNodes ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)" },
+          icon: <ServerIcon size={20} color={activeNodes === 0 ? "#d70023" : activeNodes === totalNodes ? "#72d35b" : "#ff5400"} />,
+          bg: activeNodes === 0 ? "rgba(215,0,35,0.15)" : activeNodes === totalNodes ? "rgba(114,211,91,0.1)" : "rgba(255,84,0,0.1)" },
       ];
       return (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 16 }}>
@@ -155,15 +161,15 @@
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <ActivityIcon size={14} color="#22c55e" />
+              <ActivityIcon size={14} color="#72d35b" />
               <span className="text-xs">{activeAgents}/{team.agents.length} agents</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <BotIcon size={14} color="#a855f7" />
+              <BotIcon size={14} color="#d2a8ff" />
               <span className="text-xs">{team.tokens.toLocaleString()} tokens</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <TimerIcon size={14} color="#06b6d4" />
+              <TimerIcon size={14} color="#00d8dd" />
               <span className="text-xs">{team.averageLatency}ms avg</span>
             </div>
           </div>
@@ -203,15 +209,15 @@
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <ActivityIcon size={14} color="#22c55e" />
+                        <ActivityIcon size={14} color="#72d35b" />
                         <span className="text-xs">{activeAgents}/{team.agents.length}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <BotIcon size={14} color="#a855f7" />
+                        <BotIcon size={14} color="#d2a8ff" />
                         <span className="text-xs">{team.tokens.toLocaleString()}</span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <TimerIcon size={14} color="#06b6d4" />
+                        <TimerIcon size={14} color="#00d8dd" />
                         <span className="text-xs">{team.averageLatency}ms</span>
                       </div>
                     </div>
@@ -240,46 +246,8 @@
     ];
 
     // ── AgentGrid ──
-    function AgentGrid({ team }) {
-      const [txLog, setTxLog] = useState([]);
+    function AgentGrid({ team, txLog }) {
       const logRef = useRef(null);
-
-      // Generate transaction entries for active instances
-      const teamIdRef = useRef(null);
-      useEffect(() => {
-        if (!team) { setTxLog([]); teamIdRef.current = null; return; }
-        if (team.id !== teamIdRef.current) { setTxLog([]); teamIdRef.current = team.id; }
-      }, [team && team.id]);
-
-      useEffect(() => {
-        if (!team) return;
-        const interval = setInterval(() => {
-          const activeInsts = team.agents.filter(a => a.status === 'active');
-          if (activeInsts.length === 0) return;
-          const isRead = Math.random() > 0.4;
-          const name = DATA_NAMES[Math.floor(Math.random() * DATA_NAMES.length)];
-          const now = new Date();
-          const ts = now.toLocaleTimeString('en-US', { hour12: false }) + '.' + String(now.getMilliseconds()).padStart(3, '0');
-          const latency = isRead
-            ? (Math.floor(Math.random() * 11) + 5)
-            : (Math.floor(Math.random() * 17) + 9);
-          // Write node: any node (1-3), data could have been written before a node went down
-          const writeNode = Math.floor(Math.random() * 3) + 1;
-          // Read node: must be an active node; Write node: must be an active node
-          const activeNode = activeInsts[Math.floor(Math.random() * activeInsts.length)];
-          const entry = {
-            id: Date.now() + Math.random(),
-            action: isRead ? 'READ' : 'WRITE',
-            data: name,
-            writeNode: isRead ? `Node${writeNode}` : `Node${activeNode.nodeId}`,
-            readNode: isRead ? `Node${activeNode.nodeId}` : '',
-            timestamp: ts,
-            latency: `${latency}ms`,
-          };
-          setTxLog(prev => [entry, ...prev]);
-        }, 400);
-        return () => clearInterval(interval);
-      }, [team && team.id, team && team.agents.map(a => a.status).join(',')]);
 
       if (!team) return (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
@@ -287,17 +255,18 @@
         </div>
       );
 
-      const getColor = (status) => ({ active: "#22c55e", stopping: "#f97316", starting: "#3b82f6", failed: "#ef4444" }[status] || "#9ca3af");
+      const getColor = (status) => ({ active: "#72d35b", stopping: "#d45a00", starting: "#00d8dd", failed: "#d70023" }[status] || "#606060");
       const getIcon = (status) => {
-        if (status === 'active') return <CheckCircleIcon size={16} />;
-        if (status === 'stopping') return <RefreshIcon size={16} spin />;
-        if (status === 'starting') return <RefreshIcon size={16} spin />;
-        if (status === 'failed') return <AlertCircleIcon size={16} />;
+        const c = (status === 'failed' || status === 'active' || status === 'stopping') ? "white" : "#1a1a1a";
+        if (status === 'active') return <CheckCircleIcon size={16} color={c} />;
+        if (status === 'stopping') return <RefreshIcon size={16} color={c} spin />;
+        if (status === 'starting') return <RefreshIcon size={16} color={c} spin />;
+        if (status === 'failed') return <AlertCircleIcon size={16} color={c} />;
         return null;
       };
 
       return (
-        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
           <div style={{ marginBottom: 24 }}>
             <h3 className="font-semibold text-lg">{team.name}</h3>
             <p className="text-sm text-muted">{team.agents.length} instances across cluster</p>
@@ -311,12 +280,12 @@
                 {/* Read + Write latency above */}
                 <div style={{ display: "flex", gap: 32, marginBottom: 8, alignItems: "center" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                    <ReadIcon size={12} color="#06b6d4" />
-                    <span style={{ fontSize: 11, color: "#06b6d4", fontWeight: 500 }}>{inst.readLatency}ms</span>
+                    <ReadIcon size={12} color="#00d8dd" />
+                    <span style={{ fontSize: 11, color: "#00d8dd", fontWeight: 500 }}>{inst.readLatency}ms</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                    <WriteIcon size={12} color="#f59e0b" />
-                    <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 500 }}>{inst.writeLatency}ms</span>
+                    <WriteIcon size={12} color="#ffce4a" />
+                    <span style={{ fontSize: 11, color: "#ffce4a", fontWeight: 500 }}>{inst.writeLatency}ms</span>
                   </div>
                 </div>
 
@@ -325,19 +294,19 @@
                   width: "100%", minWidth: 120, height: 80, borderRadius: 8,
                   background: getColor(inst.status),
                   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)", cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)", cursor: "pointer",
                   transition: "box-shadow 0.15s",
                 }} title={`Instance ${inst.id} - Node ${inst.nodeId}`}
-                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)"}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.6)"}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)"}
                 >
                   <div>{getIcon(inst.status)}</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Node {inst.nodeId}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: (inst.status === 'failed' || inst.status === 'active' || inst.status === 'stopping') ? "white" : "#1a1a1a" }}>Node {inst.nodeId}</div>
                 </div>
 
                 {/* Token count below */}
                 <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 8 }}>
-                  <BotIcon size={12} color="#a855f7" />
+                  <BotIcon size={12} color="#d2a8ff" />
                   <span style={{ fontSize: 12, color: "var(--muted-fg)" }}>{inst.tokens.toLocaleString()} tokens</span>
                 </div>
               </div>
@@ -346,7 +315,7 @@
 
           {/* Legend */}
           <div style={{ marginTop: 24, paddingTop: 12, borderTop: "1px solid var(--border)", display: "flex", gap: 24, fontSize: 13 }}>
-            {[["#22c55e","Active"],["#3b82f6","Starting"],["#f97316","Stopping"],["#ef4444","Down"]].map(([c,l]) => (
+            {[["#72d35b","Active"],["#00d8dd","Starting"],["#d45a00","Stopping"],["#d70023","Down"]].map(([c,l]) => (
               <div key={l} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <div style={{ width: 16, height: 16, borderRadius: 4, background: c }}></div>
                 <span className="text-muted">{l}</span>
@@ -355,34 +324,34 @@
           </div>
 
           {/* Transaction log */}
-          <div style={{ marginTop: 12, flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div style={{ marginTop: 12, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexShrink: 0 }}>
               <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted-fg)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Transaction Log</span>
               <span style={{ fontSize: 11, color: "var(--muted-fg)" }}></span>
             </div>
             <div ref={logRef} style={{
-              flex: 1, minHeight: 120, maxHeight: 220, overflowY: "auto",
-              background: "#1a1a2e", borderRadius: 6,
+              flex: 1, minHeight: 0, overflowY: "auto",
+              background: "#111111", borderRadius: 6,
               fontFamily: "Consolas, 'Courier New', monospace", fontSize: 11,
             }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ position: "sticky", top: 0, background: "#1a1a2e", zIndex: 1 }}>
+                  <tr style={{ position: "sticky", top: 0, background: "#111111", zIndex: 1 }}>
                     {["ACTION", "DATA", "WRITE NODE", "READ NODE", "TIMESTAMP", "LATENCY"].map(h => (
                       <th key={h} style={{
                         padding: "8px 10px", textAlign: "left", fontSize: 10, fontWeight: 700,
-                        color: "#8888aa", letterSpacing: "0.08em",
-                        borderBottom: "1px solid #2a2a4a", whiteSpace: "nowrap",
+                        color: "#606060", letterSpacing: "0.08em",
+                        borderBottom: "1px solid #313131", whiteSpace: "nowrap",
                       }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {txLog.length === 0 ? (
-                    <tr><td colSpan={6} style={{ padding: "12px 10px", color: "#555" }}>Waiting for transactions...</td></tr>
+                    <tr><td colSpan={6} style={{ padding: "12px 10px", color: "#434343" }}>Waiting for transactions...</td></tr>
                   ) : (
                     txLog.map(entry => (
-                      <tr key={entry.id} style={{ color: entry.action === 'READ' ? '#67e8f9' : '#fcd34d' }}>
+                      <tr key={entry.id} style={{ color: entry.action === 'READ' ? '#00d8dd' : '#ffce4a' }}>
                         <td style={{ padding: "3px 10px", whiteSpace: "nowrap" }}>{entry.action}</td>
                         <td style={{ padding: "3px 10px", whiteSpace: "nowrap" }}>{entry.data}</td>
                         <td style={{ padding: "3px 10px", whiteSpace: "nowrap" }}>{entry.writeNode}</td>
@@ -401,6 +370,9 @@
     }
 
     // ── ControlPanel ──
+    const NODE_COLORS = { active: "#72d35b", starting: "#00d8dd", stopping: "#d45a00", failed: "#d70023" };
+    const NODE_LABELS = { active: "ON", starting: "STARTING", stopping: "STOPPING", failed: "OFF" };
+
     function ControlPanel({ nodes, onLaunchTeam, onToggleNode }) {
       return (
         <div className="card" style={{ padding: 24 }}>
@@ -408,26 +380,39 @@
             <div>
               <h3 className="font-semibold" style={{ marginBottom: 12 }}>Team Control</h3>
               <button className="btn btn-primary btn-lg" style={{ width: "100%" }} onClick={onLaunchTeam}>
-                <PlayIcon size={16} color="white" />&nbsp;&nbsp;Launch New Agent Team
+                <PlayIcon size={16} color="#1a1a1a" />&nbsp;&nbsp;Launch New Agent Team
               </button>
             </div>
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
               <h3 className="font-semibold" style={{ marginBottom: 12 }}>Node Management</h3>
               <p className="text-sm text-muted" style={{ marginBottom: 16 }}>Simulate node failures to observe agent migration and recovery</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {nodes.map(node => (
-                  <button key={node.id} className={`btn ${node.active ? 'btn-primary' : 'btn-destructive'}`}
-                    style={{ justifyContent: "space-between", padding: "8px 12px" }}
-                    onClick={() => onToggleNode(node.id)}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {node.active ? <PowerIcon size={16} color="white" /> : <PowerOffIcon size={16} color="white" />}
-                      <span>Node {node.id}</span>
-                    </div>
-                    <span className={`badge ${node.active ? 'badge-secondary' : 'badge-destructive'}`} style={{ marginLeft: 8, fontSize: 11 }}>
-                      {node.active ? 'ON' : 'OFF'}
-                    </span>
-                  </button>
-                ))}
+                {nodes.map(node => {
+                  const bg = NODE_COLORS[node.status] || "#606060";
+                  const fg = (node.status === 'failed' || node.status === 'stopping' || node.status === 'active') ? "white" : "#1a1a1a";
+                  const transitioning = node.status === 'stopping' || node.status === 'starting';
+                  return (
+                    <button key={node.id} className="btn"
+                      style={{
+                        justifyContent: "space-between", padding: "8px 12px",
+                        background: bg, color: fg,
+                        opacity: transitioning ? 0.85 : 1,
+                        cursor: transitioning ? "not-allowed" : "pointer",
+                      }}
+                      onClick={() => onToggleNode(node.id)}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {node.status === 'failed' ? <PowerOffIcon size={16} color={fg} /> : <PowerIcon size={16} color={fg} />}
+                        <span>Node {node.id}</span>
+                      </div>
+                      <span style={{
+                        marginLeft: 8, fontSize: 11, fontWeight: 600, padding: "2px 10px",
+                        borderRadius: 9999, background: "rgba(0,0,0,0.2)", color: fg,
+                      }}>
+                        {NODE_LABELS[node.status]}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
@@ -451,7 +436,7 @@
       const [teams, setTeams] = useState([]);
       const [selectedTeamId, setSelectedTeamId] = useState(null);
       const [nodes, setNodes] = useState(
-        Array.from({ length: TOTAL_NODES }, (_, i) => ({ id: i + 1, active: true }))
+        Array.from({ length: TOTAL_NODES }, (_, i) => ({ id: i + 1, active: true, status: 'active' }))
       );
       const [teamCounter, setTeamCounter] = useState(0);
 
@@ -464,6 +449,16 @@
       const leftColRef = useRef(null);
       const cardRefs = useRef({});
       const [borderShape, setBorderShape] = useState(null);
+      const [leftColHeight, setLeftColHeight] = useState(null);
+
+      useEffect(() => {
+        if (!leftColRef.current) return;
+        const observer = new ResizeObserver(() => {
+          setLeftColHeight(leftColRef.current.offsetHeight);
+        });
+        observer.observe(leftColRef.current);
+        return () => observer.disconnect();
+      }, [teams.length]);
 
       useEffect(() => {
         function computeShape() {
@@ -544,6 +539,42 @@
         return () => observer.disconnect();
       }, [selectedTeamId, teams.length]);
 
+      // Transaction logs keyed by team ID — persisted across team switches
+      const [txLogs, setTxLogs] = useState({});
+
+      useEffect(() => {
+        if (teams.length === 0) return;
+        const interval = setInterval(() => {
+          setTxLogs(prev => {
+            const next = { ...prev };
+            teams.forEach(team => {
+              if (team.status !== 'running') return;
+              const activeInsts = team.agents.filter(a => a.status === 'active');
+              if (activeInsts.length === 0) return;
+              const isRead = Math.random() > 0.4;
+              const name = DATA_NAMES[Math.floor(Math.random() * DATA_NAMES.length)];
+              const now = new Date();
+              const ts = now.toLocaleTimeString('en-US', { hour12: false }) + '.' + String(now.getMilliseconds()).padStart(3, '0');
+              const latency = isRead ? (Math.floor(Math.random() * 11) + 5) : (Math.floor(Math.random() * 17) + 9);
+              const writeNode = Math.floor(Math.random() * 3) + 1;
+              const activeNode = activeInsts[Math.floor(Math.random() * activeInsts.length)];
+              const entry = {
+                id: Date.now() + Math.random(),
+                action: isRead ? 'READ' : 'WRITE',
+                data: name,
+                writeNode: isRead ? `Node${writeNode}` : `Node${activeNode.nodeId}`,
+                readNode: isRead ? `Node${activeNode.nodeId}` : '',
+                timestamp: ts,
+                latency: `${latency}ms`,
+              };
+              next[team.id] = [entry, ...(prev[team.id] || [])];
+            });
+            return next;
+          });
+        }, 400);
+        return () => clearInterval(interval);
+      }, [teams.map(t => t.id + t.agents.map(a => a.status).join('')).join(',')]);
+
       const getActiveNodes = useCallback(() => nodes.filter(n => n.active).map(n => n.id), [nodes]);
 
       const launchTeam = useCallback(() => {
@@ -565,18 +596,23 @@
       }, [teamCounter, getActiveNodes]);
 
       const toggleNode = useCallback((nodeId) => {
-        setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, active: !n.active } : n));
-        const isActivating = !nodes.find(n => n.id === nodeId)?.active;
+        const node = nodes.find(n => n.id === nodeId);
+        if (!node || node.status === 'stopping' || node.status === 'starting') return; // ignore during transition
+        const isActivating = !node.active;
         if (!isActivating) {
-          // Stopping → failed after 0.5s
+          // Stopping phase
+          setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, status: 'stopping' } : n));
           setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => a.nodeId === nodeId && a.status === 'active' ? { ...a, status: 'stopping' } : a) })));
           setTimeout(() => {
+            setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, active: false, status: 'failed' } : n));
             setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => a.nodeId === nodeId && a.status === 'stopping' ? { ...a, status: 'failed' } : a) })));
           }, 2000);
         } else {
-          // Starting → active after 9s
+          // Starting phase
+          setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, status: 'starting' } : n));
           setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => a.nodeId === nodeId && a.status === 'failed' ? { ...a, status: 'starting' } : a) })));
           setTimeout(() => {
+            setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, active: true, status: 'active' } : n));
             setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => a.nodeId === nodeId && a.status === 'starting' ? { ...a, status: 'active' } : a) })));
           }, 9000);
         }
@@ -613,7 +649,7 @@
       const selectedTeam = teams.find(t => t.id === selectedTeamId) || null;
 
       return (
-        <div style={{ minHeight: "100vh", background: "var(--bg)", padding: 24 }}>
+        <div style={{ minHeight: "100vh", background: "#1a1a1a", padding: 24 }}>
           <div style={{ maxWidth: 1800, margin: "0 auto" }}>
             <div style={{ marginBottom: 24 }}>
               <h1 className="text-3xl font-bold">Akka Cluster Demo</h1>
@@ -649,12 +685,12 @@
                         pointerEvents: "none", zIndex: 1,
                         overflow: "visible",
                       }} viewBox={`0 0 ${borderShape.width} ${borderShape.height}`} fill="none">
-                        <path d={borderShape.d} fill="#f0f5ff" stroke="#3b82f6" strokeWidth="2" />
+                        <path d={borderShape.d} fill="rgba(0,216,221,0.06)" stroke="#02a4a7" strokeWidth="2" />
                       </svg>
                     )}
 
                     {/* Left column: header + team list */}
-                    <div ref={leftColRef} style={{ width: 280, flexShrink: 0, position: "relative", zIndex: 2 }}>
+                    <div ref={leftColRef} style={{ width: 280, flexShrink: 0, position: "relative", zIndex: 2, alignSelf: "flex-start", minHeight: 600 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
                         <UsersIcon size={20} color="var(--muted-fg)" />
                         <h2 className="font-semibold">Agent Teams</h2>
@@ -677,7 +713,7 @@
                                 transition: "border-color 0.2s, background 0.2s",
                               }}
                               onClick={() => setSelectedTeamId(isSelected ? null : team.id)}
-                              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}
+                              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.4)"; }}
                               onMouseLeave={e => { if (!isSelected) e.currentTarget.style.boxShadow = "none"; }}
                             >
                               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -694,19 +730,19 @@
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <ActivityIcon size={13} color="#22c55e" />
+                                    <ActivityIcon size={13} color="#72d35b" />
                                     <span className="text-xs">{activeAgents}/{team.agents.length}</span>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <BotIcon size={13} color="#a855f7" />
+                                    <BotIcon size={13} color="#d2a8ff" />
                                     <span className="text-xs">{team.tokens.toLocaleString()}</span>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <ReadIcon size={13} color="#06b6d4" />
+                                    <ReadIcon size={13} color="#00d8dd" />
                                     <span className="text-xs">{team.avgReadLatency}ms</span>
                                   </div>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                                    <WriteIcon size={13} color="#f59e0b" />
+                                    <WriteIcon size={13} color="#ffce4a" />
                                     <span className="text-xs">{team.avgWriteLatency}ms</span>
                                   </div>
                                 </div>
@@ -717,13 +753,16 @@
                       </div>
                     </div>
 
-                    {/* Right column: agent grid — top-justified with header */}
+                    {/* Right column: agent grid — height constrained to left column */}
                     {selectedTeam && (
                       <div style={{
                         flex: 1, minWidth: 0, position: "relative", zIndex: 2,
                         padding: "8px 24px 24px 32px",
+                        display: "flex", flexDirection: "column",
+                        maxHeight: leftColHeight || "none",
+                        overflow: "hidden",
                       }}>
-                        <AgentGrid team={selectedTeam} />
+                        <AgentGrid team={selectedTeam} txLog={selectedTeam ? (txLogs[selectedTeam.id] || []) : []} />
                       </div>
                     )}
                   </div>
