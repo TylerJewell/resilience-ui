@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Akka Cluster Agent Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.27.0/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #ffffff; --fg: #0a0a0a; --card: #ffffff; --card-fg: #0a0a0a;
+      --muted: #ececf0; --muted-fg: #717182; --border: rgba(0,0,0,0.1);
+      --primary: #030213; --primary-fg: #ffffff;
+      --destructive: #d4183d; --destructive-fg: #ffffff;
+      --secondary: #f0f0f4; --secondary-fg: #030213;
+      --radius: 0.625rem;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+    .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 500; }
+    .badge-default { background: var(--primary); color: var(--primary-fg); }
+    .badge-secondary { background: var(--secondary); color: var(--secondary-fg); }
+    .badge-destructive { background: var(--destructive); color: var(--destructive-fg); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border-radius: var(--radius); font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: all 0.15s; }
+    .btn:hover { opacity: 0.9; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .btn-primary { background: var(--primary); color: var(--primary-fg); }
+    .btn-destructive { background: var(--destructive); color: var(--destructive-fg); }
+    .btn-lg { padding: 14px 24px; font-size: 15px; }
+    .text-muted { color: var(--muted-fg); }
+    .text-xs { font-size: 12px; }
+    .text-sm { font-size: 14px; }
+    .text-lg { font-size: 18px; }
+    .text-2xl { font-size: 24px; }
+    .text-3xl { font-size: 30px; }
+    .font-semibold { font-weight: 600; }
+    .font-medium { font-weight: 500; }
+    .font-bold { font-weight: 700; }
+
+    /* Icons as inline SVGs */
+    .icon { width: 1em; height: 1em; display: inline-block; vertical-align: middle; }
+    .icon-sm { width: 14px; height: 14px; }
+    .icon-md { width: 20px; height: 20px; }
+    .icon-lg { width: 24px; height: 24px; }
+
+    /* Animations */
+    @keyframes fadeInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes scaleIn { from { transform: scale(0); } to { transform: scale(1); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .animate-fade-in-left { animation: fadeInLeft 0.3s ease-out; }
+    .animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .animate-pulse-slow { animation: pulse 2s ease-in-out infinite; }
+    .animate-spin { animation: spin 1s linear infinite; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ── SVG Icon Components ──
+    const ActivityIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    );
+    const ZapIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    );
+    const BotIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+    );
+    const TimerIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+    );
+    const ServerIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+    );
+    const UsersIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    );
+    const PlayIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    );
+    const PowerIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" x2="12" y1="2" y2="12"/></svg>
+    );
+    const PowerOffIcon = ({size = 20, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64A9 9 0 0 1 20.77 15"/><path d="M6.16 6.16a9 9 0 1 0 12.68 12.68"/><path d="M12 2v4"/><path d="m2 2 20 20"/></svg>
+    );
+    const CheckCircleIcon = ({size = 12, color = "white"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    );
+    const RefreshIcon = ({size = 12, color = "white", spin = false}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={spin ? {animation: 'spin 1s linear infinite'} : {}}><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    );
+    const AlertCircleIcon = ({size = 12, color = "white"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+    );
+
+    // ── Constants ──
+    const TOTAL_NODES = 5;
+    const PREFIXES = ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta"];
+    const SUFFIXES = ["Workflow", "Orchestra", "Coalition", "Ensemble", "Squad"];
+
+    function generateTeamName(index) {
+      return `${PREFIXES[index % PREFIXES.length]} ${SUFFIXES[Math.floor(Math.random() * SUFFIXES.length)]}`;
+    }
+
+    // ── ClusterSummary ──
+    function ClusterSummary({ totalAgents, totalTokens, activeNodes, totalNodes, totalTeams, averageLatency }) {
+      const stats = [
+        { label: "Active Teams", value: totalTeams, icon: <ActivityIcon size={20} color="#3b82f6" />, bg: "rgba(59,130,246,0.1)" },
+        { label: "Active Agents", value: totalAgents, icon: <ZapIcon size={20} color="#22c55e" />, bg: "rgba(34,197,94,0.1)" },
+        { label: "Total Tokens", value: totalTokens.toLocaleString(), icon: <BotIcon size={20} color="#a855f7" />, bg: "rgba(168,85,247,0.1)" },
+        { label: "Avg Latency", value: `${averageLatency}ms`, icon: <TimerIcon size={20} color="#06b6d4" />, bg: "rgba(6,182,212,0.1)" },
+        { label: "Active Nodes", value: `${activeNodes} / ${totalNodes}`, icon: <ServerIcon size={20} color="#f97316" />, bg: "rgba(249,115,22,0.1)" },
+        { label: "Cluster Health", value: activeNodes === totalNodes ? "Healthy" : "Degraded",
+          icon: <ServerIcon size={20} color={activeNodes === totalNodes ? "#22c55e" : "#ef4444"} />,
+          bg: activeNodes === totalNodes ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)" },
+      ];
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 16 }}>
+          {stats.map((s, i) => (
+            <div key={i} className="card" style={{ padding: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ padding: 8, borderRadius: 8, background: s.bg }}>{s.icon}</div>
+                <div>
+                  <p className="text-sm text-muted">{s.label}</p>
+                  <p className="text-2xl font-semibold">{s.value}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // ── SelectedTeamCard ──
+    function SelectedTeamCard({ team }) {
+      const [, setTick] = useState(0);
+      useEffect(() => { const t = setInterval(() => setTick(c => c+1), 1000); return () => clearInterval(t); }, []);
+      const activeAgents = team.agents.filter(a => a.status === 'active').length;
+      const runtime = Math.floor((Date.now() - team.startTime) / 1000);
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <h3 className="font-medium">{team.name}</h3>
+              <p className="text-xs text-muted" style={{ marginTop: 4 }}>Runtime: {Math.floor(runtime / 60)}m {runtime % 60}s</p>
+            </div>
+            <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>{team.status}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <ActivityIcon size={14} color="#22c55e" />
+              <span className="text-xs">{activeAgents}/{team.agents.length} agents</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <BotIcon size={14} color="#a855f7" />
+              <span className="text-xs">{team.tokens.toLocaleString()} tokens</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <TimerIcon size={14} color="#06b6d4" />
+              <span className="text-xs">{team.averageLatency}ms avg</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── TeamList ──
+    function TeamList({ teams, selectedTeamId, onSelectTeam }) {
+      const [, setTick] = useState(0);
+      useEffect(() => { const t = setInterval(() => setTick(c => c+1), 1000); return () => clearInterval(t); }, []);
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {teams.length === 0 ? (
+            <div style={{ padding: 24, textAlign: "center" }}>
+              <p className="text-sm text-muted">No teams running. Launch a team to get started.</p>
+            </div>
+          ) : (
+            teams.map(team => {
+              const activeAgents = team.agents.filter(a => a.status === 'active').length;
+              const runtime = Math.floor((Date.now() - team.startTime) / 1000);
+              return (
+                <div key={team.id} className="card animate-fade-in-left" style={{
+                  padding: 16, cursor: "pointer", transition: "all 0.15s",
+                  boxShadow: selectedTeamId === team.id ? "0 0 0 2px #3b82f6" : "none"
+                }} onClick={() => onSelectTeam(team.id)}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = selectedTeamId === team.id ? "0 0 0 2px #3b82f6" : "0 4px 12px rgba(0,0,0,0.1)"}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = selectedTeamId === team.id ? "0 0 0 2px #3b82f6" : "none"}
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        <h3 className="font-medium" style={{ fontSize: 14 }}>{team.name}</h3>
+                        <p className="text-xs text-muted" style={{ marginTop: 4 }}>Runtime: {Math.floor(runtime / 60)}m {runtime % 60}s</p>
+                      </div>
+                      <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>{team.status}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <ActivityIcon size={14} color="#22c55e" />
+                        <span className="text-xs">{activeAgents}/{team.agents.length}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <BotIcon size={14} color="#a855f7" />
+                        <span className="text-xs">{team.tokens.toLocaleString()}</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <TimerIcon size={14} color="#06b6d4" />
+                        <span className="text-xs">{team.averageLatency}ms</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      );
+    }
+
+    // ── AgentGrid ──
+    function AgentGrid({ team }) {
+      if (!team) return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
+          <p className="text-muted">Select a team to view agents</p>
+        </div>
+      );
+
+      const getColor = (status) => ({ active: "#22c55e", migrating: "#eab308", failed: "#ef4444" }[status] || "#9ca3af");
+      const getIcon = (status) => {
+        if (status === 'active') return <CheckCircleIcon />;
+        if (status === 'migrating') return <RefreshIcon spin />;
+        if (status === 'failed') return <AlertCircleIcon />;
+        return null;
+      };
+
+      return (
+        <div>
+          <div style={{ marginBottom: 24 }}>
+            <h3 className="font-semibold text-lg">{team.name}</h3>
+            <p className="text-sm text-muted">{team.agents.length} agents distributed across cluster</p>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 24 }}>
+            {team.agents.map((agent, i) => (
+              <div key={agent.id} className="animate-scale-in" style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                animationDelay: `${i * 20}ms`, animationFillMode: "both"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 2, marginBottom: 6 }}>
+                  <TimerIcon size={10} color="#06b6d4" />
+                  <span style={{ fontSize: 10, color: "var(--muted-fg)", whiteSpace: "nowrap" }}>{agent.latency}ms</span>
+                </div>
+                <div className={agent.status === 'active' ? 'animate-pulse-slow' : ''} style={{
+                  width: 56, height: 56, borderRadius: 6, background: getColor(agent.status),
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.2)", cursor: "pointer",
+                  transition: "box-shadow 0.15s", animationDelay: `${Math.random() * 2}s`
+                }} title={`Agent ${agent.id} - Node ${agent.nodeId}`}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.3)"}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)"}
+                >
+                  <div style={{ marginBottom: 4 }}>{getIcon(agent.status)}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "white" }}>N{agent.nodeId}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 2, marginTop: 6 }}>
+                  <BotIcon size={10} color="#a855f7" />
+                  <span style={{ fontSize: 10, color: "var(--muted-fg)", whiteSpace: "nowrap" }}>{agent.tokens.toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 48, paddingTop: 16, borderTop: "1px solid var(--border)", display: "flex", gap: 24, fontSize: 14 }}>
+            {[["#22c55e","Active"],["#eab308","Migrating"],["#ef4444","Failed/Recovering"]].map(([c,l]) => (
+              <div key={l} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ width: 16, height: 16, borderRadius: 4, background: c }}></div>
+                <span className="text-muted">{l}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ── ControlPanel ──
+    function ControlPanel({ nodes, onLaunchTeam, onToggleNode }) {
+      return (
+        <div className="card" style={{ padding: 24 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div>
+              <h3 className="font-semibold" style={{ marginBottom: 12 }}>Team Control</h3>
+              <button className="btn btn-primary btn-lg" style={{ width: "100%" }} onClick={onLaunchTeam}>
+                <PlayIcon size={16} color="white" />&nbsp;&nbsp;Launch New Agent Team
+              </button>
+            </div>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
+              <h3 className="font-semibold" style={{ marginBottom: 12 }}>Node Management</h3>
+              <p className="text-sm text-muted" style={{ marginBottom: 16 }}>Simulate node failures to observe agent migration and recovery</p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {nodes.map(node => (
+                  <button key={node.id} className={`btn ${node.active ? 'btn-primary' : 'btn-destructive'}`}
+                    style={{ justifyContent: "space-between", padding: "8px 12px" }}
+                    onClick={() => onToggleNode(node.id)}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {node.active ? <PowerIcon size={16} color="white" /> : <PowerOffIcon size={16} color="white" />}
+                      <span>Node {node.id}</span>
+                    </div>
+                    <span className={`badge ${node.active ? 'badge-secondary' : 'badge-destructive'}`} style={{ marginLeft: 8, fontSize: 11 }}>
+                      {node.active ? 'ON' : 'OFF'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
+              <h3 className="font-semibold" style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <ServerIcon size={16} /> About Akka Clusters
+              </h3>
+              <p className="text-xs text-muted" style={{ lineHeight: 1.6 }}>
+                This demo shows how Akka clusters distribute agent workloads across nodes.
+                When a node fails, agents automatically migrate to healthy nodes, maintaining
+                state through durable execution. This reduces token waste by avoiding full
+                workflow restarts.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── App ──
+    function App() {
+      const [teams, setTeams] = useState([]);
+      const [selectedTeamId, setSelectedTeamId] = useState(null);
+      const [nodes, setNodes] = useState(
+        Array.from({ length: TOTAL_NODES }, (_, i) => ({ id: i + 1, active: true }))
+      );
+      const [teamCounter, setTeamCounter] = useState(0);
+
+      // Tick for runtime counters
+      const [, setTick] = useState(0);
+      useEffect(() => { const t = setInterval(() => setTick(c => c + 1), 1000); return () => clearInterval(t); }, []);
+
+      // Refs and state for SVG border shape
+      const mainAreaRef = useRef(null);
+      const leftColRef = useRef(null);
+      const cardRefs = useRef({});
+      const [borderShape, setBorderShape] = useState(null);
+
+      useEffect(() => {
+        function computeShape() {
+          if (!selectedTeamId || !mainAreaRef.current || !leftColRef.current || !cardRefs.current[selectedTeamId]) {
+            setBorderShape(null);
+            return;
+          }
+          const mainRect = mainAreaRef.current.getBoundingClientRect();
+          const leftRect = leftColRef.current.getBoundingClientRect();
+          const cardRect = cardRefs.current[selectedTeamId].getBoundingClientRect();
+
+          const x0 = cardRect.left - mainRect.left;
+          const x1 = leftRect.width + 16;  // panel left edge (card column + gap)
+          const x2 = mainRect.width;
+          const y0 = 0;
+          const yT = cardRect.top - mainRect.top;
+          const yB = cardRect.bottom - mainRect.top;
+          const y3 = mainRect.height;
+          const r = 12;
+
+          const nearTop = yT < r * 2.5;
+          const nearBot = (y3 - yB) < r * 2.5;
+
+          let d;
+          if (nearTop && nearBot) {
+            // Card spans nearly full height — simple rounded rect
+            d = [
+              `M ${x0+r},${yT}`, `L ${x2-r},${y0}`,
+              `A ${r},${r} 0 0,1 ${x2},${y0+r}`,
+              `L ${x2},${y3-r}`, `A ${r},${r} 0 0,1 ${x2-r},${y3}`,
+              `L ${x0+r},${yB}`, `A ${r},${r} 0 0,1 ${x0},${yB-r}`,
+              `L ${x0},${yT+r}`, `A ${r},${r} 0 0,1 ${x0+r},${yT}`, 'Z'
+            ].join(' ');
+          } else if (nearTop) {
+            // Card at top — notch merges with panel top
+            d = [
+              `M ${x0+r},${yT}`, `L ${x2-r},${y0}`,
+              `A ${r},${r} 0 0,1 ${x2},${y0+r}`,
+              `L ${x2},${y3-r}`, `A ${r},${r} 0 0,1 ${x2-r},${y3}`,
+              `L ${x1+r},${y3}`, `A ${r},${r} 0 0,1 ${x1},${y3-r}`,
+              `L ${x1},${yB+r}`, `A ${r},${r} 0 0,0 ${x1-r},${yB}`,
+              `L ${x0+r},${yB}`, `A ${r},${r} 0 0,1 ${x0},${yB-r}`,
+              `L ${x0},${yT+r}`, `A ${r},${r} 0 0,1 ${x0+r},${yT}`, 'Z'
+            ].join(' ');
+          } else if (nearBot) {
+            // Card at bottom — notch merges with panel bottom
+            d = [
+              `M ${x1+r},${y0}`, `L ${x2-r},${y0}`,
+              `A ${r},${r} 0 0,1 ${x2},${y0+r}`,
+              `L ${x2},${y3-r}`, `A ${r},${r} 0 0,1 ${x2-r},${y3}`,
+              `L ${x0+r},${yB}`, `A ${r},${r} 0 0,1 ${x0},${yB-r}`,
+              `L ${x0},${yT+r}`, `A ${r},${r} 0 0,1 ${x0+r},${yT}`,
+              `L ${x1-r},${yT}`, `A ${r},${r} 0 0,0 ${x1},${yT-r}`,
+              `L ${x1},${y0+r}`, `A ${r},${r} 0 0,1 ${x1+r},${y0}`, 'Z'
+            ].join(' ');
+          } else {
+            // General case — card in the middle
+            d = [
+              `M ${x1+r},${y0}`, `L ${x2-r},${y0}`,
+              `A ${r},${r} 0 0,1 ${x2},${y0+r}`,
+              `L ${x2},${y3-r}`, `A ${r},${r} 0 0,1 ${x2-r},${y3}`,
+              `L ${x1+r},${y3}`, `A ${r},${r} 0 0,1 ${x1},${y3-r}`,
+              `L ${x1},${yB+r}`, `A ${r},${r} 0 0,0 ${x1-r},${yB}`,
+              `L ${x0+r},${yB}`, `A ${r},${r} 0 0,1 ${x0},${yB-r}`,
+              `L ${x0},${yT+r}`, `A ${r},${r} 0 0,1 ${x0+r},${yT}`,
+              `L ${x1-r},${yT}`, `A ${r},${r} 0 0,0 ${x1},${yT-r}`,
+              `L ${x1},${y0+r}`, `A ${r},${r} 0 0,1 ${x1+r},${y0}`, 'Z'
+            ].join(' ');
+          }
+
+          setBorderShape({ d, width: mainRect.width, height: mainRect.height });
+        }
+
+        // Double-rAF to ensure layout has settled after React render
+        requestAnimationFrame(() => requestAnimationFrame(computeShape));
+        const observer = new ResizeObserver(() => requestAnimationFrame(computeShape));
+        if (mainAreaRef.current) observer.observe(mainAreaRef.current);
+        return () => observer.disconnect();
+      }, [selectedTeamId, teams.length]);
+
+      const getActiveNodes = useCallback(() => nodes.filter(n => n.active).map(n => n.id), [nodes]);
+
+      const launchTeam = useCallback(() => {
+        const activeNodeIds = getActiveNodes();
+        if (activeNodeIds.length === 0) { alert("No active nodes available. Please enable at least one node."); return; }
+        const teamId = `team-${Date.now()}`;
+        const agentCount = Math.floor(Math.random() * 16) + 12;
+        const agents = [];
+        for (let i = 0; i < agentCount; i++) {
+          agents.push({
+            id: `agent-${teamId}-${i}`, teamId, nodeId: activeNodeIds[Math.floor(Math.random() * activeNodeIds.length)],
+            status: 'active', tokens: Math.floor(Math.random() * 500) + 100, latency: Math.floor(Math.random() * 196) + 5
+          });
+        }
+        const averageLatency = Math.floor(agents.reduce((s, a) => s + a.latency, 0) / agents.length);
+        setTeams(prev => [...prev, { id: teamId, name: generateTeamName(teamCounter), agents, tokens: agents.reduce((s, a) => s + a.tokens, 0), status: 'running', startTime: Date.now(), averageLatency }]);
+        setSelectedTeamId(teamId);
+        setTeamCounter(prev => prev + 1);
+      }, [teamCounter, getActiveNodes]);
+
+      const toggleNode = useCallback((nodeId) => {
+        setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, active: !n.active } : n));
+        const isActivating = !nodes.find(n => n.id === nodeId)?.active;
+        if (!isActivating) {
+          setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => a.nodeId === nodeId ? { ...a, status: 'failed' } : a) })));
+          setTimeout(() => {
+            setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => a.nodeId === nodeId && a.status === 'failed' ? { ...a, status: 'migrating' } : a) })));
+          }, 1000);
+          setTimeout(() => {
+            const activeNodeIds = nodes.filter(n => n.active && n.id !== nodeId).map(n => n.id);
+            if (activeNodeIds.length === 0) return;
+            setTeams(prev => prev.map(team => ({ ...team, agents: team.agents.map(a => {
+              if (a.nodeId === nodeId && a.status === 'migrating') {
+                return { ...a, nodeId: activeNodeIds[Math.floor(Math.random() * activeNodeIds.length)], status: 'active' };
+              }
+              return a;
+            }) })));
+          }, 3000);
+        }
+      }, [nodes]);
+
+      // Token accumulation simulation
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setTeams(prev => prev.map(team => {
+            if (team.status !== 'running') return team;
+            const updatedAgents = team.agents.map(a => {
+              if (a.status === 'active') {
+                const latencyChange = Math.floor(Math.random() * 21) - 10;
+                return { ...a, tokens: a.tokens + Math.floor(Math.random() * 60) + 20, latency: Math.max(5, Math.min(200, a.latency + latencyChange)) };
+              }
+              return a;
+            });
+            return { ...team, agents: updatedAgents, tokens: updatedAgents.reduce((s, a) => s + a.tokens, 0),
+              averageLatency: Math.floor(updatedAgents.reduce((s, a) => s + a.latency, 0) / updatedAgents.length) };
+          }));
+        }, 2000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const totalAgents = teams.reduce((s, t) => s + t.agents.length, 0);
+      const totalTokens = teams.reduce((s, t) => s + t.tokens, 0);
+      const activeNodeCount = nodes.filter(n => n.active).length;
+      const averageLatency = teams.length > 0 ? Math.floor(teams.reduce((s, t) => s + t.averageLatency, 0) / teams.length) : 0;
+      const selectedTeam = teams.find(t => t.id === selectedTeamId) || null;
+
+      return (
+        <div style={{ minHeight: "100vh", background: "var(--bg)", padding: 24 }}>
+          <div style={{ maxWidth: 1800, margin: "0 auto" }}>
+            <div style={{ marginBottom: 24 }}>
+              <h1 className="text-3xl font-bold">Akka Cluster Demo</h1>
+              <p className="text-muted" style={{ marginTop: 8 }}>Visualizing distributed agent orchestration with high availability and resilience</p>
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <ClusterSummary totalAgents={totalAgents} totalTokens={totalTokens} activeNodes={activeNodeCount} totalNodes={TOTAL_NODES} totalTeams={teams.length} averageLatency={averageLatency} />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "3fr 9fr", gap: 24, alignItems: "start" }}>
+              <ControlPanel nodes={nodes} onLaunchTeam={launchTeam} onToggleNode={toggleNode} />
+
+              {/* Main area */}
+              <div>
+                {teams.length === 0 ? (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                      <UsersIcon size={20} color="var(--muted-fg)" />
+                      <h2 className="font-semibold">Agent Teams</h2>
+                    </div>
+                    <div className="card" style={{ padding: 24, textAlign: "center" }}>
+                      <p className="text-sm text-muted">No teams running. Launch a team to get started.</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div ref={mainAreaRef} style={{ display: "flex", position: "relative", alignItems: "flex-start" }}>
+                    {/* SVG shaped border overlay */}
+                    {borderShape && (
+                      <svg style={{
+                        position: "absolute", top: 0, left: 0,
+                        width: borderShape.width, height: borderShape.height,
+                        pointerEvents: "none", zIndex: 1,
+                        overflow: "visible",
+                      }} viewBox={`0 0 ${borderShape.width} ${borderShape.height}`} fill="none">
+                        <path d={borderShape.d} fill="#f0f5ff" stroke="#3b82f6" strokeWidth="2" />
+                      </svg>
+                    )}
+
+                    {/* Left column: header + team list */}
+                    <div ref={leftColRef} style={{ width: 280, flexShrink: 0, position: "relative", zIndex: 2 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                        <UsersIcon size={20} color="var(--muted-fg)" />
+                        <h2 className="font-semibold">Agent Teams</h2>
+                      </div>
+
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {teams.map(team => {
+                          const isSelected = team.id === selectedTeamId;
+                          const activeAgents = team.agents.filter(a => a.status === 'active').length;
+                          const runtime = Math.floor((Date.now() - team.startTime) / 1000);
+                          return (
+                            <div key={team.id}
+                              ref={el => { if (el) cardRefs.current[team.id] = el; }}
+                              className="animate-fade-in-left"
+                              style={{
+                                padding: 16, cursor: "pointer",
+                                background: isSelected ? "transparent" : "var(--card)",
+                                border: isSelected ? "none" : "1px solid var(--border)",
+                                borderRadius: isSelected ? 0 : "var(--radius)",
+                                transition: "border-color 0.2s, background 0.2s",
+                              }}
+                              onClick={() => setSelectedTeamId(isSelected ? null : team.id)}
+                              onMouseEnter={e => { if (!isSelected) e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"; }}
+                              onMouseLeave={e => { if (!isSelected) e.currentTarget.style.boxShadow = "none"; }}
+                            >
+                              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                                  <div>
+                                    <h3 className="font-medium" style={{ fontSize: 14 }}>{team.name}</h3>
+                                    <p className="text-xs text-muted" style={{ marginTop: 4 }}>
+                                      Runtime: {Math.floor(runtime / 60)}m {runtime % 60}s
+                                    </p>
+                                  </div>
+                                  <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>
+                                    {team.status}
+                                  </span>
+                                </div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <ActivityIcon size={14} color="#22c55e" />
+                                    <span className="text-xs">{activeAgents}/{team.agents.length}</span>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <BotIcon size={14} color="#a855f7" />
+                                    <span className="text-xs">{team.tokens.toLocaleString()}</span>
+                                  </div>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <TimerIcon size={14} color="#06b6d4" />
+                                    <span className="text-xs">{team.averageLatency}ms</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right column: agent grid — top-justified with header */}
+                    {selectedTeam && (
+                      <div style={{
+                        flex: 1, minWidth: 0, position: "relative", zIndex: 2,
+                        padding: "8px 24px 24px 32px",
+                      }}>
+                        <AgentGrid team={selectedTeam} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>
