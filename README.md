@@ -1,37 +1,51 @@
-# Template of empty project
+# Akka Resilience Demo
 
-To understand the Akka concepts that are the basis for this example, see [Development Process](https://doc.akka.io/concepts/development-process.html) in the documentation.
+A visual dashboard for demonstrating Akka's distributed systems capabilities across two key scenarios: cluster-based agent orchestration and multi-region high availability with disaster recovery.
 
-This project contains the skeleton to create an Akka service. To understand more about these components, see [Developing services](https://doc.akka.io/sdk/index.html).
+## Overview
 
-You are supposed to change `empty-service` and the package name `com.example` to your own names.
+This application connects to Akka services to visualize how distributed agent workloads behave under real-world conditions, including node failures, region outages, and automatic recovery.
 
-Use Maven to build your project:
+### Akka Clustering
 
-```shell
-mvn compile
+Demonstrates how Akka clusters distribute agent workloads and memory across nodes. Key features:
+
+- **Agent Team Management** -- Launch agent teams that are distributed across a 3-node cluster
+- **Node Failure Simulation** -- Take nodes offline and observe agent migration and recovery in real time
+- **Transaction Log** -- Live feed of read/write operations showing which nodes handle each request
+- **Cluster Health Monitoring** -- Summary metrics including active teams, token usage, read/write latency, and node status
+
+### Akka HA/DR
+
+Demonstrates Akka's active-active multi-region replication for high availability and disaster recovery. Key features:
+
+- **Multi-Region Deployment** -- Agent teams operate across two regions (us-east-1 and eu-west-1)
+- **Active-Active Replication** -- Writes to either region are automatically replicated to the other using reliable gRPC
+- **Region Outage Simulation** -- Toggle regions unavailable to observe seamless failover with no data loss
+- **Conflict Reconciliation** -- When a downed region reactivates, Akka uses vector spaces to reconcile conflicts automatically
+- **Replication Metrics** -- Live replication latency and cumulative data transfer between regions
+- **Replication Log** -- Tracks write origins and replication targets across regions
+
+## Getting Started
+
+Open `resilience.html` in your browser:
+
+```
+open resilience.html
 ```
 
-To start your service locally, run:
+Use the **Akka Clustering** and **Akka HA/DR** tabs to switch between demos. Each tab has its own control panel for launching agent teams and simulating infrastructure events.
 
-```shell
-mvn compile exec:java
-```
+## Usage
 
-You can use the [Akka Console](https://console.akka.io) to create a project and see the status of your service.
+1. Click **Launch New Agent Team** to start a team
+2. Observe the live transaction log and metrics as agents process workloads
+3. Use the control panel to simulate failures:
+   - **Clustering tab**: Toggle nodes on/off to trigger agent migration
+   - **HA/DR tab**: Toggle regions available/unavailable to observe failover and replication behavior
+4. Launch multiple teams to see how the system scales
 
-Build container image:
+## Learn More
 
-```shell
-mvn clean install -DskipTests
-```
-
-Install the `akka` CLI as documented in [Install Akka CLI](https://doc.akka.io/reference/cli/index.html).
-
-Deploy the service using the image tag from above `mvn install`:
-
-```shell
-akka service deploy empty-service empty-service:tag-name --push
-```
-
-Refer to [Deploy and manage services](https://doc.akka.io/operations/services/deploy-service.html) for more information.
+- [Akka Documentation](https://doc.akka.io)
+- [Akka Console](https://console.akka.io)
