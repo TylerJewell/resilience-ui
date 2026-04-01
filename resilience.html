@@ -115,6 +115,9 @@
     const ArrowRightLeftIcon = ({size = 20, color = "currentColor"}) => (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
     );
+    const XIcon = ({size = 14, color = "currentColor"}) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+    );
 
     // ── Constants ──
     const TOTAL_NODES = 3;
@@ -397,7 +400,7 @@
             </div>
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
               <h3 className="font-semibold" style={{ marginBottom: 12 }}>Node Management</h3>
-              <p className="text-sm text-muted" style={{ marginBottom: 16 }}>Simulate node failures to observe agent migration and recovery</p>
+              <p className="text-sm text-muted" style={{ marginBottom: 16 }}>Enact node failures to observe agent migration and recovery</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {nodes.map(node => {
                   const bg = NODE_COLORS[node.status] || "#606060";
@@ -504,7 +507,7 @@
             </div>
             <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24 }}>
               <h3 className="font-semibold" style={{ marginBottom: 12 }}>Region Management</h3>
-              <p className="text-sm text-muted" style={{ marginBottom: 16 }}>Simulate region outages to observe active-active failover</p>
+              <p className="text-sm text-muted" style={{ marginBottom: 16 }}>Enact region outages to observe active-active failover</p>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {regions.map(region => {
                   const bg = REGION_COLORS[region.status] || "#606060";
@@ -913,6 +916,12 @@
         setTeamCounter(prev => prev + 1);
       }, [teamCounter, getActiveNodes]);
 
+      const deleteTeam = useCallback((teamId) => {
+        setTeams(prev => prev.filter(t => t.id !== teamId));
+        setTxLogs(prev => { const next = { ...prev }; delete next[teamId]; return next; });
+        if (selectedTeamId === teamId) setSelectedTeamId(null);
+      }, [selectedTeamId]);
+
       const toggleNode = useCallback((nodeId) => {
         const node = nodes.find(n => n.id === nodeId);
         if (!node || node.status === 'stopping' || node.status === 'starting') return; // ignore during transition
@@ -1028,6 +1037,12 @@
           }, 9000);
         }
       }, [hadrRegions]);
+
+      const deleteHadrTeam = useCallback((teamId) => {
+        setHadrTeams(prev => prev.filter(t => t.id !== teamId));
+        setHadrTxLogs(prev => { const next = { ...prev }; delete next[teamId]; return next; });
+        if (hadrSelectedTeamId === teamId) setHadrSelectedTeamId(null);
+      }, [hadrSelectedTeamId]);
 
       // HA/DR token accumulation + replication metrics
       useEffect(() => {
@@ -1287,9 +1302,23 @@
                                       Runtime: {Math.floor(runtime / 60)}m {runtime % 60}s
                                     </p>
                                   </div>
-                                  <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>
-                                    {team.status}
-                                  </span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>
+                                      {team.status}
+                                    </span>
+                                    <button style={{
+                                      background: "none", border: "none", cursor: "pointer", padding: 2,
+                                      borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
+                                      opacity: 0.5, transition: "opacity 0.15s",
+                                    }}
+                                      onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                                      onMouseLeave={e => e.currentTarget.style.opacity = "0.5"}
+                                      onClick={e => { e.stopPropagation(); deleteTeam(team.id); }}
+                                      title="Delete team"
+                                    >
+                                      <XIcon size={14} color="var(--muted-fg)" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -1400,7 +1429,21 @@
                                     <h3 className="font-medium" style={{ fontSize: 14 }}>{team.name}</h3>
                                     <p className="text-xs text-muted" style={{ marginTop: 4 }}>Runtime: {Math.floor(runtime / 60)}m {runtime % 60}s</p>
                                   </div>
-                                  <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>{team.status}</span>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <span className={`badge ${team.status === 'running' ? 'badge-default' : 'badge-secondary'}`}>{team.status}</span>
+                                    <button style={{
+                                      background: "none", border: "none", cursor: "pointer", padding: 2,
+                                      borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center",
+                                      opacity: 0.5, transition: "opacity 0.15s",
+                                    }}
+                                      onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                                      onMouseLeave={e => e.currentTarget.style.opacity = "0.5"}
+                                      onClick={e => { e.stopPropagation(); deleteHadrTeam(team.id); }}
+                                      title="Delete team"
+                                    >
+                                      <XIcon size={14} color="var(--muted-fg)" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
