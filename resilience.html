@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Akka Resilience Demo</title>
+  <title>Akka Reliability Tester</title>
   <link rel="icon" href="https://doc.akka.io/_/img/favicon.ico" />
   <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
@@ -435,7 +435,7 @@
                 <ServerIcon size={16} /> About Akka Clusters
               </h3>
               <p className="text-xs text-muted" style={{ lineHeight: 1.6 }}>
-                This demo shows how Akka clusters distribute agent workloads and memory across nodes. When a node fails, agents automatically migrate to healthy nodes. State is sharded in-memory across nodes with embedded routing and load balancing. Workflow state is managed with durable execution and memory recovery is from event sourced state. The combination reduces token waste by avoiding full workflow restarts. Akka's largest customers run clusters of 300K nodes with petabytes of data.
+                Akka clusters distribute agent workloads and memory across nodes. When a node fails, agents automatically migrate to healthy nodes. State is sharded in-memory across nodes with embedded routing and load balancing. Workflow state is managed with durable execution and memory recovery is from event sourced state. The combination reduces token waste by avoiding full workflow restarts. Akka's largest customers run clusters of 300K nodes with petabytes of data.
               </p>
             </div>
           </div>
@@ -542,7 +542,7 @@
                 <GlobeIcon size={16} /> About Akka HA/DR
               </h3>
               <p className="text-xs text-muted" style={{ lineHeight: 1.6 }}>
-                This demo shows Akka's active-active multi-region replication. Agent state is replicated across regions in real time using reliable gRPC. When a region becomes unavailable, agents continue operating in the remaining region with no data loss. Writes to either region are automatically replicated to the other. When a downed region reactivates, Akka uses vector spaces to reconcile conflicts automatically during synchronization.
+                Akka provides active-active multi-region replication. Agent state is replicated across regions in real time using reliable gRPC. When a region becomes unavailable, agents continue operating in the remaining region with no data loss. Writes to either region are automatically replicated to the other. When a downed region reactivates, Akka uses vector spaces to reconcile conflicts automatically during synchronization.
               </p>
             </div>
           </div>
@@ -1220,7 +1220,7 @@
         <div style={{ minHeight: "100vh", background: "#1a1a1a", padding: 24 }}>
           <div style={{ maxWidth: 1800, margin: "0 auto" }}>
             <div style={{ marginBottom: 24 }}>
-              <h1 className="text-3xl font-bold">Akka Resilience Demo</h1>
+              <h1 className="text-3xl font-bold">Akka Reliability Tester</h1>
               <p className="text-muted" style={{ marginTop: 8 }}>Visualizing distributed agent orchestration with high availability and resilience</p>
             </div>
 
